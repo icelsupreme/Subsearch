@@ -9,7 +9,7 @@ YouTube searches all of YouTube, or one channel at a time. Subsearch searches on
 Subsearch is a static site with no server. Everything runs in the browser:
 
 1. You sign in with Google. Subsearch asks only for read access to your YouTube account (`youtube.readonly`).
-2. Subsearch reads your subscriptions, then downloads each channel's upload list with the YouTube Data API: titles, descriptions, dates, thumbnails, and privacy status.
+2. Subsearch reads your subscriptions, then downloads each channel's upload list with the YouTube Data API: titles, the first 500 characters of each description, dates, and privacy status. Thumbnails load straight from YouTube by video ID.
 3. The lists are saved in the browser's IndexedDB. Later syncs download only videos that are newer than the saved ones.
 4. Searches run in a web worker, so typing never waits for a search.
 

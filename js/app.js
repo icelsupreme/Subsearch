@@ -1,4 +1,4 @@
-import { store } from './db.js';
+import { DESCRIPTION_LIMIT, store } from './db.js';
 import { dismiss, toast } from './toast.js';
 
 const CLIENT_ID = '1001205093961-u7jg9fcc5b5iob45c6flotph82k5vl99.apps.googleusercontent.com';
@@ -58,10 +58,9 @@ async function syncChannel(sub, old) {
         fresh.push({
           id: s.resourceId.videoId,
           title: s.title,
-          description: s.description,
+          description: s.description.slice(0, DESCRIPTION_LIMIT),
           publishedAt: s.publishedAt,
-          thumb: s.thumbnails?.medium?.url,
-          privacy: status?.privacyStatus,
+          ...(status?.privacyStatus !== 'public' && { privacy: status?.privacyStatus }),
         });
       }
     }
@@ -149,7 +148,8 @@ async function forget() {
 function videoItem(v) {
   const li = $('video-template').content.firstElementChild.cloneNode(true);
   li.querySelector('a').href = `https://www.youtube.com/watch?v=${v.id}`;
-  if (v.thumb) li.querySelector('img').src = v.thumb;
+  // The medium thumbnail URL follows from the video ID. Older saved videos still have a stored URL.
+  li.querySelector('img').src = v.thumb ?? `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`;
   li.querySelector('.video-title').textContent = v.title;
   li.querySelector('.video-title').title = v.title;
   const date = new Date(v.publishedAt).toLocaleDateString(undefined, {

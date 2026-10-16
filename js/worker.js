@@ -1,5 +1,5 @@
 // Runs searches off the main thread, so typing never waits for a search to finish.
-import { store } from './db.js';
+import { DESCRIPTION_LIMIT, store } from './db.js';
 import { isUnavailable, scorer } from './search.js';
 
 const MAX_AGE = 30 * 864e5; // YouTube API policy: stored data must be refreshed or deleted within 30 days
@@ -13,6 +13,8 @@ async function load() {
   const all = await store('readonly', (s) => s.getAll());
   for (const c of all) if (c.savedAt < cutoff) await store('readwrite', (s) => s.delete(c.id));
   channels = all.filter((c) => c.savedAt >= cutoff);
+  // Videos saved before the description limit keep full descriptions on disk until they expire; trim them in memory.
+  for (const c of channels) for (const v of c.videos) v.description = v.description.slice(0, DESCRIPTION_LIMIT);
   return {
     channels: channels.map((c) => ({ id: c.id, title: c.title, count: c.videos.length })),
     syncedAt: Math.max(0, ...channels.map((c) => c.syncedAt ?? c.savedAt)),
