@@ -16,7 +16,12 @@ async function load() {
   // Videos saved before the description limit keep full descriptions on disk until they expire; trim them in memory.
   for (const c of channels) for (const v of c.videos) v.description = v.description.slice(0, DESCRIPTION_LIMIT);
   return {
-    channels: channels.map((c) => ({ id: c.id, title: c.title, count: c.videos.length })),
+    channels: channels.map((c) => ({
+      id: c.id,
+      title: c.title,
+      count: c.videos.length,
+      latest: c.videos[0]?.publishedAt,
+    })),
     syncedAt: Math.max(0, ...channels.map((c) => c.syncedAt ?? c.savedAt)),
     // The oldest full download expires first. After that, the next sync downloads it again.
     expiresAt: Math.min(...channels.map((c) => c.savedAt)) + MAX_AGE,
@@ -24,12 +29,13 @@ async function load() {
 }
 
 // ponytail: scans every video on each search; build an index if this gets slow with large libraries
-function search({ query, sort, date, channel, unavailable }) {
+function search({ query, sort, date, channels: on, unavailable }) {
+  const only = on && new Set(on);
   const score = scorer(query);
   const after = date ? new Date(Date.now() - date * 864e5).toISOString() : '';
   hits = [];
   for (const c of channels) {
-    if (channel && c.id !== channel) continue;
+    if (only && !only.has(c.id)) continue;
     for (const v of c.videos) {
       if (v.publishedAt < after || (!unavailable && isUnavailable(v))) continue;
       const s = score(v, c.title);

@@ -1,3 +1,4 @@
+import { initChannels, selected, setChannels, writeParams } from './channels.js';
 import { DESCRIPTION_LIMIT, store } from './db.js';
 import { dismiss, toast } from './toast.js';
 
@@ -161,7 +162,7 @@ function videoItem(v) {
   return li;
 }
 
-const FILTERS = ['q', 'sort', 'date', 'channel', 'unavailable'];
+const FILTERS = ['q', 'sort', 'date', 'unavailable'];
 const getFilter = (id) => ($(id).type === 'checkbox' ? ($(id).checked ? '1' : '') : $(id).value);
 function setFilter(id, value) {
   if ($(id).type === 'checkbox') $(id).checked = value === '1';
@@ -171,15 +172,6 @@ let firstLoad = true;
 let searchId = 0;
 let total = 0;
 let shown = 0;
-
-function fillChannels() {
-  const select = $('channel');
-  const current = select.value || new URLSearchParams(location.search).get('channel') || '';
-  const sorted = [...channels].sort((a, b) => a.title.localeCompare(b.title));
-  select.replaceChildren(select.options[0], ...sorted.map((c) => new Option(`${c.title} (${c.count})`, c.id)));
-  select.value = current;
-  if (select.selectedIndex < 0) select.value = '';
-}
 
 const formatDate = (time) =>
   new Date(time).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
@@ -211,7 +203,14 @@ function render() {
   }
   const filters = Object.fromEntries(FILTERS.map((id) => [id, getFilter(id)]));
   setBusy(true);
-  worker.postMessage({ type: 'search', id: ++searchId, size: PAGE_SIZE, ...filters, query: filters.q });
+  worker.postMessage({
+    type: 'search',
+    id: ++searchId,
+    size: PAGE_SIZE,
+    ...filters,
+    query: filters.q,
+    channels: selected(),
+  });
 }
 
 worker.onmessage = ({ data }) => {
@@ -232,7 +231,7 @@ worker.onmessage = ({ data }) => {
       warnExpiry(data);
     }
     firstLoad = false;
-    fillChannels();
+    setChannels(data.channels);
     return render();
   }
   if (data.id !== searchId) return; // an older search; a newer one is on its way
@@ -241,7 +240,11 @@ worker.onmessage = ({ data }) => {
     total = data.total;
     shown = 0;
     const n = total.toLocaleString();
-    $('count').textContent = total ? `${n} ${$('q').value.trim() ? 'results' : 'videos'}.` : 'No results.';
+    $('count').textContent = total
+      ? `${n} ${$('q').value.trim() ? 'results' : 'videos'}.`
+      : selected()?.length === 0
+        ? 'No channels selected.'
+        : 'No results.';
     $('results').replaceChildren();
   }
   if (data.type === 'page') {
@@ -267,6 +270,7 @@ function update() {
     const value = getFilter(id);
     if (value && !(id === 'sort' && value === 'relevance')) params.set(id, value);
   }
+  writeParams(params);
   history.replaceState(null, '', params.size ? `?${params}` : location.pathname);
   const query = $('q').value.trim();
   document.title = query ? `${query} · Subsearch` : 'Subsearch: search your YouTube subscriptions';
@@ -282,7 +286,7 @@ $('q').addEventListener('input', () => {
   clearTimeout(timer);
   timer = setTimeout(update, 300);
 });
-for (const id of ['sort', 'date', 'channel', 'unavailable']) $(id).addEventListener('change', update);
+for (const id of ['sort', 'date', 'unavailable']) $(id).addEventListener('change', update);
 $('search-form')
   .querySelector('form')
   .addEventListener('submit', (e) => {
@@ -290,6 +294,7 @@ $('search-form')
     clearTimeout(timer);
     update();
   });
+initChannels(update);
 $('more').addEventListener('click', () =>
   worker.postMessage({ type: 'page', id: searchId, offset: shown, size: PAGE_SIZE }),
 );

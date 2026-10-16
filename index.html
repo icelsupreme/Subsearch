@@ -36,7 +36,7 @@
     <a href="./" class="flex items-center gap-2.5 rounded-xl">
       <img src="img/logo.svg" alt="" width="36" height="36" class="size-9">
       <span class="text-xl font-extrabold tracking-tight">Subsearch</span>
-      <span class="rounded-full border border-line px-2 py-0.5 text-xs font-semibold text-muted" title="Version">v0.4.0</span>
+      <span class="rounded-full border border-line px-2 py-0.5 text-xs font-semibold text-muted" title="Version">v0.5.0</span>
     </a>
     <div class="flex gap-1">
       <button id="theme" type="button" class="btn-ghost px-3" aria-label="Theme: system. Click to change." title="Theme: system. Click to change.">
@@ -98,12 +98,10 @@
               <option value="365">Past year</option>
             </select>
           </label>
-          <label class="flex min-w-0 items-center gap-2">
-            <span class="text-muted">Channel</span>
-            <select id="channel" class="select max-w-64">
-              <option value="">All channels</option>
-            </select>
-          </label>
+          <button id="channels-open" type="button" class="select inline-flex items-center gap-2 px-3" aria-haspopup="dialog">
+            <svg class="size-4 shrink-0 text-muted" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M224,128a8,8,0,0,1-8,8H128a8,8,0,0,1,0-16h88A8,8,0,0,1,224,128ZM128,72h88a8,8,0,0,0,0-16H128a8,8,0,0,0,0,16Zm88,112H128a8,8,0,0,0,0,16h88a8,8,0,0,0,0-16ZM82.34,42.34,56,68.69,45.66,58.34A8,8,0,0,0,34.34,69.66l16,16a8,8,0,0,0,11.32,0l32-32A8,8,0,0,0,82.34,42.34Zm0,64L56,132.69,45.66,122.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Zm0,64L56,196.69,45.66,186.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32,0l32-32a8,8,0,0,0-11.32-11.32Z"/></svg>
+            <span id="channels-label">All channels</span>
+          </button>
           <label class="flex min-h-11 cursor-pointer items-center gap-2">
             <input id="unavailable" type="checkbox" class="size-4 cursor-pointer accent-flame">
             <span class="text-muted">Show private and deleted videos</span>
@@ -154,6 +152,54 @@
     </p>
   </footer>
 </div>
+
+<dialog id="channels-drawer" aria-labelledby="channels-title"
+  class="fixed inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full max-w-sm border-l border-line bg-page p-0 text-fg shadow-xl transition-transform duration-200 backdrop:bg-ink/50 starting:open:translate-x-full motion-reduce:transition-none">
+  <div class="flex h-full flex-col">
+    <div class="flex items-center justify-between gap-2 border-b border-line py-2 pr-2 pl-4">
+      <h2 id="channels-title" class="text-lg font-extrabold tracking-tight">Channels</h2>
+      <button id="channels-close" type="button" class="btn-ghost px-3" aria-label="Close">
+        <svg class="icon" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>
+      </button>
+    </div>
+    <div class="space-y-3 border-b border-line p-4 text-sm">
+      <label for="channel-find" class="sr-only">Find a channel</label>
+      <input id="channel-find" type="search" autocomplete="off" placeholder="Find a channel"
+        class="min-h-11 w-full rounded-lg border border-edge bg-surface px-3 text-base placeholder:text-muted focus:border-flame">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <fieldset class="flex items-center gap-1">
+          <legend class="sr-only">Sort channels</legend>
+          <label class="cursor-pointer rounded-lg px-3 py-2.5 text-muted has-checked:bg-surface has-checked:font-semibold has-checked:text-fg has-focus-visible:outline-3 has-focus-visible:outline-flame">
+            <input id="channel-sort-recent" type="radio" name="channel-sort" class="sr-only" checked>Recent activity
+          </label>
+          <label class="cursor-pointer rounded-lg px-3 py-2.5 text-muted has-checked:bg-surface has-checked:font-semibold has-checked:text-fg has-focus-visible:outline-3 has-focus-visible:outline-flame">
+            <input id="channel-sort-name" type="radio" name="channel-sort" class="sr-only">A to Z
+          </label>
+        </fieldset>
+        <div class="flex gap-1">
+          <button id="channels-all" type="button" class="btn-ghost px-3">All</button>
+          <button id="channels-none" type="button" class="btn-ghost px-3">None</button>
+        </div>
+      </div>
+    </div>
+    <ul id="channel-list" class="flex-1 overflow-y-auto p-2"></ul>
+    <div class="border-t border-line p-4">
+      <button id="channels-done" type="button" class="btn-primary w-full justify-center">Done</button>
+    </div>
+  </div>
+</dialog>
+
+<template id="channel-template">
+  <li>
+    <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-surface">
+      <input type="checkbox" class="size-4 shrink-0 cursor-pointer accent-flame">
+      <span class="min-w-0 flex-1">
+        <span class="channel-name block truncate font-semibold" dir="auto">Channel name</span>
+        <span class="channel-meta block text-xs text-muted"></span>
+      </span>
+    </label>
+  </li>
+</template>
 
 <div id="toasts" class="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex flex-col items-center gap-2 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:items-end" aria-live="polite"></div>
 

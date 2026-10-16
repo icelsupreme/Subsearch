@@ -47,6 +47,7 @@ Ties go to the newest video. `test/search.test.js` checks this order.
 | `js/worker.js` | The search worker. |
 | `js/search.js` | Ranking and the private-video check, shared with the tests. |
 | `js/db.js` | IndexedDB access. |
+| `js/channels.js` | The channel drawer: pick channels, find, and sort them. |
 | `js/toast.js` | Notices for sync progress, loading, and errors. |
 | `js/theme.js` | Applies the saved theme before the page paints. |
 | `css/input.css` | Tailwind source with the brand tokens. |
