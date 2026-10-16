@@ -28,10 +28,13 @@ export function clearRecent() {
   save([]);
 }
 
-// The chips show only while the search box is empty. The same list feeds the box's suggestions (a native datalist).
+// The chips show only while the search box is empty. Once you type, the box suggests matching recent searches
+// (a native datalist). An empty box gets no suggestions, so the dropdown doesn't cover the chips with the same list.
 export function render() {
   const list = load();
-  $('q-suggestions').replaceChildren(...list.map((q) => new Option(q)));
+  const typed = $('q').value.trim().toLowerCase();
+  const suggestions = typed ? list.filter((q) => q.toLowerCase().includes(typed) && q.toLowerCase() !== typed) : [];
+  $('q-suggestions').replaceChildren(...suggestions.map((q) => new Option(q)));
   $('recent').hidden = !list.length || !!$('q').value.trim();
   $('recent-list').replaceChildren(
     ...list.map((q) => {
