@@ -1,5 +1,6 @@
 import { initChannels, selected, setChannels, setMatches, writeParams } from './channels.js';
 import { DESCRIPTION_LIMIT, store } from './db.js';
+import { clearRecent, initRecent, remember, render as renderRecent } from './recent.js';
 import { toast } from './toast.js';
 
 const CLIENT_ID = '1001205093961-u7jg9fcc5b5iob45c6flotph82k5vl99.apps.googleusercontent.com';
@@ -140,6 +141,7 @@ async function sync() {
 async function forget() {
   if (!confirm('Delete all saved data from this browser and sign out?')) return;
   await store('readwrite', (s) => s.clear());
+  clearRecent();
   if (token) google.accounts.oauth2.revoke(token);
   token = null;
   toast('sync', 'Your data is deleted.');
@@ -294,6 +296,11 @@ $('q').addEventListener('input', () => {
   setBusy(true);
   clearTimeout(timer);
   timer = setTimeout(update, 300);
+  renderRecent();
+});
+// Opening a result counts the search as used.
+$('results').addEventListener('click', (e) => {
+  if (e.target.closest('a')) remember($('q').value);
 });
 for (const id of ['sort', 'date', 'unavailable']) $(id).addEventListener('change', update);
 $('search-form')
@@ -301,9 +308,17 @@ $('search-form')
   .addEventListener('submit', (e) => {
     e.preventDefault();
     clearTimeout(timer);
+    remember($('q').value);
     update();
   });
 initChannels(update);
+initRecent((query) => {
+  $('q').value = query;
+  remember(query);
+  renderRecent();
+  update();
+  $('q').focus();
+});
 $('more').addEventListener('click', () =>
   worker.postMessage({ type: 'page', id: searchId, offset: shown, size: PAGE_SIZE }),
 );
