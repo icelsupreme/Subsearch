@@ -13,7 +13,7 @@ Subsearch is a static site with no server. Everything runs in the browser:
 3. The lists are saved in the browser's IndexedDB. Later syncs download only videos that are newer than the saved ones.
 4. Searches run in a web worker, so typing never waits for a search.
 
-Each channel's saved data is deleted 30 days after its first full download, as the YouTube API Services policies require; the next sync downloads it again. The page shows the last sync date and the next expiry date. **Delete data** clears everything and signs you out.
+Each channel's saved data is deleted 30 days after its first full download, as the YouTube API Services policies require; the next sync downloads it again. The page footer shows the last sync date and the next expiry date, and a notice appears 3 days before data expires. **Delete data** clears everything and signs you out.
 
 ### Quota
 
@@ -47,6 +47,7 @@ Ties go to the newest video. `test/search.test.js` checks this order.
 | `js/worker.js` | The search worker. |
 | `js/search.js` | Ranking and the private-video check, shared with the tests. |
 | `js/db.js` | IndexedDB access. |
+| `js/toast.js` | Notices for sync progress, loading, and errors. |
 | `js/theme.js` | Applies the saved theme before the page paints. |
 | `css/input.css` | Tailwind source with the brand tokens. |
 | `img/` | Logo, favicon, social card, and touch icon. |

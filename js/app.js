@@ -1,10 +1,10 @@
 import { store } from './db.js';
+import { dismiss, toast } from './toast.js';
 
 const CLIENT_ID = '1001205093961-u7jg9fcc5b5iob45c6flotph82k5vl99.apps.googleusercontent.com';
 const API = 'https://www.googleapis.com/youtube/v3/';
 const PAGE_SIZE = 48;
 const $ = (id) => document.getElementById(id);
-const setStatus = (text) => ($('status').textContent = text);
 const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
 let channels = []; // [{id, title, count}], from the worker
 let token;
@@ -86,10 +86,9 @@ function setSyncing(syncing) {
 async function sync() {
   if ($('sync').getAttribute('aria-disabled') === 'true') return;
   setSyncing(true);
-  const progress = $('progress');
   try {
     token = await signIn();
-    setStatus('Getting your subscriptions…');
+    toast('sync', 'Getting your subscriptions', { dots: true, sticky: true });
     const subs = [];
     for await (const items of pages('subscriptions', { part: 'snippet', mine: true })) {
       subs.push(...items.map((i) => ({ id: i.snippet.resourceId.channelId, title: i.snippet.title })));
@@ -101,16 +100,17 @@ async function sync() {
 
     const queue = [...subs];
     let done = 0;
-    progress.max = subs.length;
-    progress.value = 0;
-    progress.hidden = false;
     const download = async () => {
       while (queue.length) {
         const sub = queue.shift();
         try {
           await syncChannel(sub, await store('readonly', (s) => s.get(sub.id)));
-          progress.value = ++done;
-          setStatus(`Syncing channel ${done} of ${subs.length}…`);
+          done++;
+          toast('sync', `Syncing channel ${done} of ${subs.length}`, {
+            dots: true,
+            sticky: true,
+            progress: { value: done, max: subs.length },
+          });
         } catch (e) {
           queue.length = 0;
           throw e;
@@ -118,9 +118,10 @@ async function sync() {
       }
     };
     await Promise.all(Array.from({ length: 4 }, download));
-    setStatus(`Sync done: ${subs.length} channels.`);
+    toast('sync', `Sync done: ${subs.length} channels.`);
   } catch (e) {
-    setStatus(
+    toast(
+      'sync',
       e.reason === 'quotaExceeded'
         ? 'The daily YouTube limit for this site is used up. Synced channels are saved. Try again tomorrow.'
         : e.status === 401
@@ -128,10 +129,10 @@ async function sync() {
           : e.message === 'access_denied'
             ? "Sign-in was canceled, or Google didn't allow it. Synced channels are saved."
             : `Error: ${e.message}`,
+      { error: true },
     );
   } finally {
     setSyncing(false);
-    progress.hidden = true;
     worker.postMessage({ type: 'load' });
   }
 }
@@ -141,7 +142,7 @@ async function forget() {
   await store('readwrite', (s) => s.clear());
   if (token) google.accounts.oauth2.revoke(token);
   token = null;
-  setStatus('Your data is deleted.');
+  toast('sync', 'Your data is deleted.');
   worker.postMessage({ type: 'load' });
 }
 
@@ -184,9 +185,16 @@ const formatDate = (time) =>
   new Date(time).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 
 function showSyncInfo({ syncedAt, expiresAt }) {
+  $('sync-info').hidden = !syncedAt;
   $('sync-info').textContent = syncedAt
-    ? `Last synced ${formatDate(syncedAt)}. Saved videos expire ${formatDate(expiresAt)}. Sync before then to keep them.`
+    ? `Last synced ${formatDate(syncedAt)}. Saved videos expire ${formatDate(expiresAt)}.`
     : '';
+}
+
+function warnExpiry({ syncedAt, expiresAt }) {
+  if (syncedAt && expiresAt - Date.now() < 3 * 864e5) {
+    toast('expiry', `Some saved videos expire ${formatDate(expiresAt)}. Sync to keep them.`, { sticky: true });
+  }
 }
 
 function render() {
@@ -208,11 +216,21 @@ function render() {
 
 worker.onmessage = ({ data }) => {
   if (data.type === 'error')
-    return setStatus(`This browser doesn't allow saving data, so Subsearch can't work here. Error: ${data.message}`);
+    return toast(
+      'load',
+      `This browser doesn't allow saving data, so Subsearch can't work here. Error: ${data.message}`,
+      {
+        error: true,
+      },
+    );
   if (data.type === 'loaded') {
     channels = data.channels;
     showSyncInfo(data);
-    if (firstLoad) setStatus('');
+    if (firstLoad) {
+      clearTimeout(loadingTimer);
+      dismiss('load');
+      warnExpiry(data);
+    }
     firstLoad = false;
     fillChannels();
     return render();
@@ -279,12 +297,15 @@ $('sync').addEventListener('click', sync);
 $('start').addEventListener('click', sync);
 $('forget').addEventListener('click', forget);
 
+// Only show "Loading" if loading is slow, so a quick load doesn't flash a toast.
+const loadingTimer = setTimeout(() => toast('load', 'Loading your videos', { dots: true, sticky: true }), 400);
 worker.postMessage({ type: 'load' });
 
 const THEMES = ['system', 'light', 'dark'];
 function showTheme() {
   const theme = document.documentElement.dataset.theme || 'system';
-  for (const icon of $('theme').querySelectorAll('[data-theme-icon]')) icon.hidden = icon.dataset.themeIcon !== theme;
+  for (const icon of $('theme').querySelectorAll('[data-theme-icon]'))
+    icon.toggleAttribute('hidden', icon.dataset.themeIcon !== theme); // SVG has no .hidden property
   $('theme').title = `Theme: ${theme}. Click to change.`;
   $('theme').setAttribute('aria-label', $('theme').title);
 }
