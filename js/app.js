@@ -1,6 +1,6 @@
 import { initChannels, selected, setChannels, setMatches, writeParams } from './channels.js';
 import { DESCRIPTION_LIMIT, store } from './db.js';
-import { clearRecent, initRecent, remember, render as renderRecent } from './recent.js';
+import { clearRecent, initRecent, remember, render as renderRecent, suggest } from './recent.js';
 import { toast } from './toast.js';
 
 const CLIENT_ID = '1001205093961-u7jg9fcc5b5iob45c6flotph82k5vl99.apps.googleusercontent.com';
@@ -298,7 +298,28 @@ $('q').addEventListener('input', () => {
   timer = setTimeout(update, 300);
   renderRecent();
   showClear();
+  showSuggestion();
 });
+
+// Inline suggestion from recent searches: the rest of the match shows in muted text after the typed text.
+// Tab, or the right arrow at the end of the text, accepts it.
+let suggestion = null;
+function showSuggestion() {
+  const q = $('q');
+  const atEnd = q.selectionStart === q.value.length && q.scrollWidth <= q.clientWidth;
+  suggestion = document.activeElement === q && atEnd ? suggest(q.value) : null;
+  $('q-ghost-typed').textContent = suggestion ? q.value : '';
+  $('q-ghost-rest').textContent = suggestion ? suggestion.slice(q.value.length) : '';
+}
+$('q').addEventListener('keydown', (e) => {
+  const q = $('q');
+  if (!suggestion || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key !== 'Tab' && !(e.key === 'ArrowRight' && q.selectionStart === q.value.length)) return;
+  e.preventDefault();
+  q.value = suggestion;
+  q.dispatchEvent(new Event('input'));
+});
+for (const type of ['focus', 'blur', 'click', 'keyup']) $('q').addEventListener(type, showSuggestion);
 
 // Our own clear button: the browser's built-in one is hidden, and Firefox has none.
 const showClear = () => ($('q-clear').hidden = !$('q').value);

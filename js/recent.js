@@ -24,17 +24,19 @@ export function remember(query) {
   if (q) save([q, ...load().filter((x) => x.toLowerCase() !== q.toLowerCase())].slice(0, LIMIT));
 }
 
+// The most recent search that starts with the typed text, for the inline suggestion. Null if none.
+export function suggest(typed) {
+  const t = typed.toLowerCase();
+  return (t.trim() && load().find((q) => q.toLowerCase().startsWith(t) && q.length > t.length)) || null;
+}
+
 export function clearRecent() {
   save([]);
 }
 
-// The chips show only while the search box is empty. Once you type, the box suggests matching recent searches
-// (a native datalist). An empty box gets no suggestions, so the dropdown doesn't cover the chips with the same list.
+// Shown only while the search box is empty.
 export function render() {
   const list = load();
-  const typed = $('q').value.trim().toLowerCase();
-  const suggestions = typed ? list.filter((q) => q.toLowerCase().includes(typed) && q.toLowerCase() !== typed) : [];
-  $('q-suggestions').replaceChildren(...suggestions.map((q) => new Option(q)));
   $('recent').hidden = !list.length || !!$('q').value.trim();
   $('recent-list').replaceChildren(
     ...list.map((q) => {
