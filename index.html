@@ -77,7 +77,8 @@
         <div class="relative">
           <label for="q" class="sr-only">Search your subscriptions</label>
           <svg class="icon pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></svg>
-          <input id="q" type="search" autocomplete="off" placeholder="Search titles, descriptions, and channels"
+          <datalist id="q-suggestions"></datalist>
+          <input id="q" type="search" autocomplete="off" list="q-suggestions" placeholder="Search titles, descriptions, and channels"
             class="w-full rounded-2xl border-2 border-edge bg-surface py-3.5 pr-14 pl-12 text-lg placeholder:text-muted focus:border-flame focus:outline-none [&::-webkit-search-cancel-button]:appearance-none">
           <button id="q-clear" type="button" class="absolute top-1/2 right-1.5 grid size-11 -translate-y-1/2 cursor-pointer place-items-center rounded-xl text-muted hover:bg-page hover:text-fg" aria-label="Clear search" hidden>
             <svg class="icon" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>

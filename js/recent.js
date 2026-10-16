@@ -28,9 +28,10 @@ export function clearRecent() {
   save([]);
 }
 
-// Shown only while the search box is empty.
+// The chips show only while the search box is empty. The same list feeds the box's suggestions (a native datalist).
 export function render() {
   const list = load();
+  $('q-suggestions').replaceChildren(...list.map((q) => new Option(q)));
   $('recent').hidden = !list.length || !!$('q').value.trim();
   $('recent-list').replaceChildren(
     ...list.map((q) => {
