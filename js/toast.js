@@ -21,8 +21,8 @@ export function toast(id, text, { progress, dots, error, sticky } = {}) {
   el.querySelector('.toast-text').textContent = text;
   el.querySelector('.toast-dots').hidden = !dots;
   el.querySelector('.toast-error').toggleAttribute('hidden', !error); // SVG elements have no .hidden property
-  el.classList.toggle('border-flame', !!error);
-  el.classList.toggle('border-transparent', !error);
+  el.classList.toggle('border-l-flame', !!error);
+  el.classList.toggle('border-l-transparent', !error);
   const bar = el.querySelector('progress');
   bar.hidden = !progress;
   if (progress) Object.assign(bar, progress);

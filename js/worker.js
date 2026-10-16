@@ -5,6 +5,7 @@ import { isUnavailable, scorer } from './search.js';
 const MAX_AGE = 30 * 864e5; // YouTube API policy: stored data must be refreshed or deleted within 30 days
 let channels = [];
 let hits = [];
+let matches = {};
 
 const card = ([v, c]) => ({ id: v.id, title: v.title, thumb: v.thumb, publishedAt: v.publishedAt, channel: c.title });
 
@@ -34,13 +35,20 @@ function search({ query, sort, date, channels: on, unavailable }) {
   const score = scorer(query);
   const after = date ? new Date(Date.now() - date * 864e5).toISOString() : '';
   hits = [];
+  // Match counts cover every channel, also the ones switched off, so the channel drawer can show where matches are.
+  matches = {};
   for (const c of channels) {
-    if (only && !only.has(c.id)) continue;
+    const included = !only || only.has(c.id);
+    if (!included && !query.trim()) continue;
+    let n = 0;
     for (const v of c.videos) {
       if (v.publishedAt < after || (!unavailable && isUnavailable(v))) continue;
       const s = score(v, c.title);
-      if (s) hits.push([v, c, s]);
+      if (!s) continue;
+      n++;
+      if (included) hits.push([v, c, s]);
     }
+    if (n) matches[c.id] = n;
   }
   const newest = (a, b) => b[0].publishedAt.localeCompare(a[0].publishedAt);
   hits.sort(
@@ -62,7 +70,8 @@ self.onmessage = ({ data }) => {
 async function handle(data) {
   try {
     if (data.type === 'load') postMessage({ type: 'loaded', ...(await load()) });
-    if (data.type === 'search') postMessage({ type: 'results', id: data.id, total: search(data) });
+    if (data.type === 'search')
+      postMessage({ type: 'results', id: data.id, total: search(data), matches: data.query.trim() ? matches : null });
     if (data.type === 'search' || data.type === 'page') {
       const offset = data.offset ?? 0;
       postMessage({ type: 'page', id: data.id, offset, items: hits.slice(offset, offset + data.size).map(card) });

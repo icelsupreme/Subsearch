@@ -2,6 +2,7 @@
 const $ = (id) => document.getElementById(id);
 let channels = []; // [{id, title, count, latest}], from the worker
 let excluded = new Set(); // channels switched off; empty means all channels
+let matches = null; // {channelId: count} for the current search query, or null with no query
 let onChange = () => {};
 
 const formatDate = (iso) =>
@@ -34,31 +35,56 @@ function updateLabels() {
   $('channels-label').textContent = excluded.size ? `${on} of ${channels.length} channels` : 'All channels';
 }
 
+// With a search query, channels that have matching videos come first, most matches first, under their own heading.
 function renderList() {
   const sort = $('channel-sort-name').checked ? 'name' : 'recent';
   const sorted = [...channels].sort((a, b) =>
     sort === 'name' ? a.title.localeCompare(b.title) : (b.latest ?? '').localeCompare(a.latest ?? ''),
   );
+  const matching = matches ? sorted.filter((c) => matches[c.id]).sort((a, b) => matches[b.id] - matches[a.id]) : [];
+  const rest = matches ? sorted.filter((c) => !matches[c.id]) : sorted;
+  const heading = (text) => {
+    const li = document.createElement('li');
+    li.className = 'channel-heading px-2 pt-3 pb-1 text-xs font-semibold tracking-wide text-muted uppercase';
+    li.textContent = text;
+    return li;
+  };
   $('channel-list').replaceChildren(
-    ...sorted.map((c) => {
-      const li = $('channel-template').content.firstElementChild.cloneNode(true);
-      const box = li.querySelector('input');
-      box.value = c.id;
-      box.checked = !excluded.has(c.id);
-      li.querySelector('.channel-name').textContent = c.title;
-      li.querySelector('.channel-meta').textContent = c.latest
-        ? `${c.count.toLocaleString()} videos · latest ${formatDate(c.latest)}`
-        : `${c.count.toLocaleString()} videos`;
-      return li;
-    }),
+    ...(matching.length ? [heading('Channels with matches'), ...matching.map(row)] : []),
+    ...(matching.length && rest.length ? [heading('Other channels')] : []),
+    ...rest.map(row),
   );
   filterList();
+}
+
+function row(c) {
+  const li = $('channel-template').content.firstElementChild.cloneNode(true);
+  const box = li.querySelector('input');
+  box.value = c.id;
+  box.checked = !excluded.has(c.id);
+  li.querySelector('.channel-name').textContent = c.title;
+  li.querySelector('.channel-meta').textContent = c.latest
+    ? `${c.count.toLocaleString()} videos · latest ${formatDate(c.latest)}`
+    : `${c.count.toLocaleString()} videos`;
+  const badge = li.querySelector('.channel-matches');
+  badge.hidden = !matches?.[c.id];
+  badge.textContent = matches?.[c.id]
+    ? `${matches[c.id].toLocaleString()} ${matches[c.id] === 1 ? 'match' : 'matches'}`
+    : '';
+  li.querySelector('label').classList.toggle('bg-surface', !!matches?.[c.id]);
+  return li;
+}
+
+export function setMatches(next) {
+  matches = next;
+  renderList();
 }
 
 function filterList() {
   const find = $('channel-find').value.trim().toLowerCase();
   for (const li of $('channel-list').children) {
-    li.hidden = !!find && !li.querySelector('.channel-name').textContent.toLowerCase().includes(find);
+    const name = li.querySelector('.channel-name');
+    li.hidden = !!find && !name?.textContent.toLowerCase().includes(find);
   }
 }
 
@@ -107,8 +133,8 @@ export function initChannels(handler) {
   // "All" and "None" act on the channels the find box shows.
   const setVisible = (on) => {
     for (const li of $('channel-list').children) {
-      if (li.hidden) continue;
       const box = li.querySelector('input');
+      if (li.hidden || !box) continue;
       box.checked = on;
       if (on) excluded.delete(box.value);
       else excluded.add(box.value);

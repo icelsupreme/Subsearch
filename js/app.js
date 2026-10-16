@@ -1,6 +1,6 @@
-import { initChannels, selected, setChannels, writeParams } from './channels.js';
+import { initChannels, selected, setChannels, setMatches, writeParams } from './channels.js';
 import { DESCRIPTION_LIMIT, store } from './db.js';
-import { dismiss, toast } from './toast.js';
+import { toast } from './toast.js';
 
 const CLIENT_ID = '1001205093961-u7jg9fcc5b5iob45c6flotph82k5vl99.apps.googleusercontent.com';
 const API = 'https://www.googleapis.com/youtube/v3/';
@@ -199,6 +199,7 @@ function render() {
     $('count').textContent = '';
     $('results').replaceChildren();
     $('more').hidden = true;
+    showEmpty(null);
     return;
   }
   const filters = Object.fromEntries(FILTERS.map((id) => [id, getFilter(id)]));
@@ -225,11 +226,7 @@ worker.onmessage = ({ data }) => {
   if (data.type === 'loaded') {
     channels = data.channels;
     showSyncInfo(data);
-    if (firstLoad) {
-      clearTimeout(loadingTimer);
-      dismiss('load');
-      warnExpiry(data);
-    }
+    if (firstLoad) warnExpiry(data);
     firstLoad = false;
     setChannels(data.channels);
     return render();
@@ -239,12 +236,15 @@ worker.onmessage = ({ data }) => {
     setBusy(false);
     total = data.total;
     shown = 0;
-    const n = total.toLocaleString();
-    $('count').textContent = total
-      ? `${n} ${$('q').value.trim() ? 'results' : 'videos'}.`
-      : selected()?.length === 0
-        ? 'No channels selected.'
-        : 'No results.';
+    const query = $('q').value.trim();
+    $('count').textContent = total ? `${total.toLocaleString()} ${query ? 'results' : 'videos'}.` : '';
+    setMatches(data.matches);
+    if (total) showEmpty(null);
+    else if (selected()?.length === 0)
+      showEmpty('No channels selected', 'Open the channel list and turn on at least one channel.');
+    else if (query)
+      showEmpty(`No videos match “${query}”`, 'Try fewer or different words, or change the date and channel filters.');
+    else showEmpty('No videos to show', 'Change the filters, or sync to download your videos.');
     $('results').replaceChildren();
   }
   if (data.type === 'page') {
@@ -256,6 +256,15 @@ worker.onmessage = ({ data }) => {
     $('more').hidden = shown >= total;
   }
 };
+
+// The message in the middle of the page when there's nothing to list. Pass null to hide it.
+function showEmpty(title, text = '', { dots = false } = {}) {
+  $('empty').hidden = !title;
+  if (!title) return;
+  $('empty-title').textContent = title;
+  $('empty-dots').hidden = !dots;
+  $('empty-text').textContent = text;
+}
 
 // Shows "Searching..." and dims old results from the first keystroke until the new results arrive.
 function setBusy(busy) {
@@ -302,8 +311,7 @@ $('sync').addEventListener('click', sync);
 $('start').addEventListener('click', sync);
 $('forget').addEventListener('click', forget);
 
-// Only show "Loading" if loading is slow, so a quick load doesn't flash a toast.
-const loadingTimer = setTimeout(() => toast('load', 'Loading your videos', { dots: true, sticky: true }), 400);
+showEmpty('Loading your videos', 'A large library can take a few seconds.', { dots: true });
 worker.postMessage({ type: 'load' });
 
 const THEMES = ['system', 'light', 'dark'];
