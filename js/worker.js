@@ -22,6 +22,7 @@ async function load() {
       title: c.title,
       count: c.videos.length,
       latest: c.videos[0]?.publishedAt,
+      thumb: c.thumb,
     })),
     syncedAt: Math.max(0, ...channels.map((c) => c.syncedAt ?? c.savedAt)),
     // The oldest full download expires first. After that, the next sync downloads it again.

@@ -1,4 +1,4 @@
-import { initChannels, selected, setChannels, setMatches, writeParams } from './channels.js';
+import { initChannels, onlyChannel, selected, setChannels, setMatches, writeParams } from './channels.js';
 import { DESCRIPTION_LIMIT, store } from './db.js';
 import { clearRecent, initRecent, remember, render as renderRecent, suggest } from './recent.js';
 import { toast } from './toast.js';
@@ -92,7 +92,13 @@ async function sync() {
     toast('sync', 'Getting your subscriptions', { dots: true, sticky: true });
     const subs = [];
     for await (const items of pages('subscriptions', { part: 'snippet', mine: true })) {
-      subs.push(...items.map((i) => ({ id: i.snippet.resourceId.channelId, title: i.snippet.title })));
+      subs.push(
+        ...items.map((i) => ({
+          id: i.snippet.resourceId.channelId,
+          title: i.snippet.title,
+          thumb: i.snippet.thumbnails?.default?.url,
+        })),
+      );
     }
     const ids = new Set(subs.map((s) => s.id));
     for (const id of await store('readonly', (s) => s.getAllKeys())) {
@@ -241,6 +247,7 @@ worker.onmessage = ({ data }) => {
     const query = $('q').value.trim();
     $('count').textContent = total ? `${total.toLocaleString()} ${query ? 'results' : 'videos'}.` : '';
     setMatches(data.matches);
+    showChannelHit(query);
     if (total) showEmpty(null);
     else if (selected()?.length === 0)
       showEmpty('No channels selected', 'Open the channel list and turn on at least one channel.');
@@ -258,6 +265,32 @@ worker.onmessage = ({ data }) => {
     $('more').hidden = shown >= total;
   }
 };
+
+// A channel whose name is exactly the search gets a card above the video results.
+const normalize = (s) => s.trim().toLowerCase().replace(/s+/g, ' ');
+function showChannelHit(query) {
+  const q = normalize(query);
+  const hits = q ? channels.filter((c) => normalize(c.title) === q) : [];
+  const on = selected();
+  $('channel-hits').replaceChildren(
+    ...hits.map((c) => {
+      const card = $('channel-hit-template').content.firstElementChild.cloneNode(true);
+      const img = card.querySelector('img');
+      if (c.thumb) img.src = c.thumb;
+      else img.remove();
+      card.querySelector('.hit-initial').textContent = c.title.trim()[0] ?? '';
+      card.querySelector('.hit-name').textContent = c.title;
+      card.querySelector('.hit-meta').textContent = c.latest
+        ? `${c.count.toLocaleString()} videos · latest upload ${formatDate(c.latest)}`
+        : `${c.count.toLocaleString()} videos`;
+      card.querySelector('.hit-link').href = `https://www.youtube.com/channel/${c.id}`;
+      const only = card.querySelector('.hit-only');
+      only.hidden = on?.length === 1 && on[0] === c.id;
+      only.addEventListener('click', () => onlyChannel(c.id));
+      return card;
+    }),
+  );
+}
 
 // The message in the middle of the page when there's nothing to list. Pass null to hide it.
 function showEmpty(title, text = '', { dots = false } = {}) {

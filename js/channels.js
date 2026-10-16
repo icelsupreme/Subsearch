@@ -93,6 +93,13 @@ function changed() {
   onChange();
 }
 
+// Turns on one channel and turns off all others.
+export function onlyChannel(id) {
+  excluded = new Set(channels.filter((c) => c.id !== id).map((c) => c.id));
+  renderList();
+  changed();
+}
+
 export function setChannels(list) {
   const first = !channels.length;
   channels = list;
