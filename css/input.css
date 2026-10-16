@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* Brand palette */
+:root {
+  --cream: #fffcf2;
+  --sand: #ccc5b9;
+  --ash: #403d39;
+  --ink: #252422;
+  --flame: #eb5e28;
+
+  --page: var(--cream);
+  --fg: var(--ink);
+  --muted: var(--ash);
+  --line: var(--sand);
+  --surface: #f6f1e4;
+}
+
+/* Dark colors: follow the system unless the theme button picked light or dark (data-theme on <html>). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: var(--ink);
+    --fg: var(--cream);
+    --muted: var(--sand);
+    --line: var(--ash);
+    --surface: #2f2d2a;
+  }
+}
+:root[data-theme="dark"] {
+  --page: var(--ink);
+  --fg: var(--cream);
+  --muted: var(--sand);
+  --line: var(--ash);
+  --surface: #2f2d2a;
+}
+
+@theme inline {
+  --font-sans: "Plus Jakarta Sans", "Noto Sans Hebrew", "Noto Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --color-page: var(--page);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  /* Borders of form controls: 3:1 or more against the page in both themes. */
+  --color-edge: color-mix(in srgb, var(--muted) 60%, transparent);
+  --color-surface: var(--surface);
+  --color-flame: var(--flame);
+  --color-ink: var(--ink);
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  :focus-visible {
+    outline: 3px solid var(--flame);
+    outline-offset: 2px;
+  }
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-xl px-4 font-semibold transition-colors duration-200 disabled:cursor-wait disabled:opacity-60 aria-disabled:cursor-wait aria-disabled:opacity-60;
+}
+/* Ink text on flame: 4.55:1. Cream text on flame fails contrast. */
+@utility btn-primary {
+  @apply btn bg-flame text-ink hover:bg-flame/85;
+}
+@utility btn-ghost {
+  @apply btn text-muted hover:bg-surface hover:text-fg;
+}
+@utility icon {
+  @apply size-5 shrink-0;
+}
+@utility select {
+  @apply min-h-11 cursor-pointer truncate rounded-lg border border-edge bg-surface px-2 text-fg focus:border-flame;
+}
+
+/* "Searching..." dots: each dot fades in turn. */
+@keyframes dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+.dots span {
+  animation: dot 1.2s infinite;
+}
+.dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dots span {
+    animation: none;
+  }
+}

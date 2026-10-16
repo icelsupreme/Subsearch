@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Subsearch</title>
+  <rect width="64" height="64" rx="14" fill="#252422"/>
+  <rect x="9" y="11" width="32" height="22" rx="4" fill="#ccc5b9"/>
+  <rect x="15" y="17" width="32" height="22" rx="4" fill="#fffcf2"/>
+  <circle cx="41" cy="39" r="10" fill="#252422" stroke="#eb5e28" stroke-width="5"/>
+  <path d="M48.5 46.5 55 53" stroke="#eb5e28" stroke-width="6" stroke-linecap="round"/>
+</svg>

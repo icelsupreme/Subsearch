@@ -1,0 +1,27 @@
+{
+  "name": "subsearch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Search every video from the YouTube channels you subscribe to.",
+  "license": "MIT",
+  "author": {
+    "name": "Aviv M. Icel",
+    "url": "https://github.com/icelsupreme"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tailwindcss -i css/input.css -o css/app.css --minify",
+    "watch": "tailwindcss -i css/input.css -o css/app.css --watch",
+    "start": "serve -l 8000",
+    "lint": "biome check .",
+    "test": "node --test test/**/*.test.js",
+    "format": "biome check --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@phosphor-icons/core": "^2.1.1",
+    "@tailwindcss/cli": "^4.3.3",
+    "serve": "^14.2.6",
+    "tailwindcss": "^4.3.3"
+  }
+}
