@@ -41,6 +41,8 @@ Ties go to the newest video. `test/search.test.js` checks this order.
 |---|---|
 | `index.html` | The search page. |
 | `changelog/index.html` | The user-facing changelog page. |
+| `privacy/index.html` | The privacy policy. |
+| `terms/index.html` | The terms of use. |
 | `js/app.js` | Sign-in, sync, filters, and results. |
 | `js/worker.js` | The search worker. |
 | `js/search.js` | Ranking and the private-video check, shared with the tests. |
@@ -81,7 +83,7 @@ Every push and pull request runs `.github/workflows/ci.yml`: lint, tests, and th
 
 ## Releases
 
-- Versions follow [Semantic Versioning](https://semver.org/). The version appears in `package.json` and in the header badge of both pages.
+- Versions follow [Semantic Versioning](https://semver.org/). The version appears in `package.json` and in the header badge of every page.
 - The changelog page follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). It lists only changes that users see on the site.
 
 ## Brand

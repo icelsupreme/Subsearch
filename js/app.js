@@ -125,7 +125,9 @@ async function sync() {
         ? 'The daily YouTube limit for this site is used up. Synced channels are saved. Try again tomorrow.'
         : e.status === 401
           ? 'Your Google sign-in expired. Synced channels are saved. To continue, click Sync.'
-          : `Error: ${e.message}`,
+          : e.message === 'access_denied'
+            ? "Sign-in was canceled, or Google didn't allow it. Synced channels are saved."
+            : `Error: ${e.message}`,
     );
   } finally {
     setSyncing(false);

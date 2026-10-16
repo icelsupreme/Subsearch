@@ -25,7 +25,7 @@ jobs:
       - name: Collect site files
         run: |
           mkdir -p _site/css
-          cp -r index.html changelog js img _site/
+          cp -r index.html changelog privacy terms js img _site/
           cp css/app.css _site/css/
       - uses: actions/upload-pages-artifact@v3
         with:
