@@ -297,7 +297,20 @@ $('q').addEventListener('input', () => {
   clearTimeout(timer);
   timer = setTimeout(update, 300);
   renderRecent();
+  showClear();
 });
+
+// Our own clear button: the browser's built-in one is hidden, and Firefox has none.
+const showClear = () => ($('q-clear').hidden = !$('q').value);
+$('q-clear').addEventListener('click', () => {
+  $('q').value = '';
+  clearTimeout(timer);
+  showClear();
+  renderRecent();
+  update();
+  $('q').focus();
+});
+showClear();
 // Opening a result counts the search as used.
 $('results').addEventListener('click', (e) => {
   if (e.target.closest('a')) remember($('q').value);
@@ -314,6 +327,7 @@ $('search-form')
 initChannels(update);
 initRecent((query) => {
   $('q').value = query;
+  showClear();
   remember(query);
   renderRecent();
   update();
